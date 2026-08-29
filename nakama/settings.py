@@ -3,12 +3,21 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+# ============================================================
+# SECURITY / ENVIRONMENT
+# ============================================================
+
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
     "dev-only-change-this-secret"
 )
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
+DEBUG = os.environ.get(
+    "DJANGO_DEBUG",
+    "True"
+).lower() == "true"
+
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -19,6 +28,20 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+
+# Render automatically provides this variable.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get(
+    "RENDER_EXTERNAL_HOSTNAME"
+)
+
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+
+# ============================================================
+# APPLICATIONS
+# ============================================================
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -26,12 +49,22 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+
     "accounts",
     "tracker",
 ]
 
+
+# ============================================================
+# MIDDLEWARE
+# ============================================================
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+
+    # WhiteNoise serves static files in production.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -40,13 +73,30 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+
+# ============================================================
+# URL / WSGI
+# ============================================================
+
 ROOT_URLCONF = "nakama.urls"
+
+WSGI_APPLICATION = "nakama.wsgi.application"
+
+
+# ============================================================
+# TEMPLATES
+# ============================================================
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [str(BASE_DIR / "templates")],
+
+        "DIRS": [
+            str(BASE_DIR / "templates")
+        ],
+
         "APP_DIRS": True,
+
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.debug",
@@ -58,7 +108,10 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "nakama.wsgi.application"
+
+# ============================================================
+# DATABASE
+# ============================================================
 
 DATABASES = {
     "default": {
@@ -67,37 +120,116 @@ DATABASES = {
     }
 }
 
+
+# ============================================================
+# PASSWORD VALIDATION
+# ============================================================
+
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "UserAttributeSimilarityValidator"
+        ),
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"
+        "NAME": (
+            "django.contrib.auth.password_validation."
+            "MinimumLengthValidator"
+        ),
     },
 ]
 
+
+# ============================================================
+# INTERNATIONALIZATION
+# ============================================================
+
 LANGUAGE_CODE = "en-us"
+
 TIME_ZONE = "Asia/Kolkata"
+
 USE_I18N = True
+
 USE_TZ = True
 
+
+# ============================================================
+# STATIC FILES
+# ============================================================
+
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [str(BASE_DIR / "static")]
+
+# Production directory used by collectstatic.
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Existing development static directory.
+STATICFILES_DIRS = [
+    str(BASE_DIR / "static")
+]
+
+
+# ============================================================
+# WHITE NOISE
+# ============================================================
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage."
+            "CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
+
+
+# ============================================================
+# DEFAULT MODEL FIELD
+# ============================================================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
+# ============================================================
+# AUTHENTICATION
+# ============================================================
+
 LOGIN_URL = "/accounts/login/"
+
 LOGIN_REDIRECT_URL = "/tracker/"
+
 LOGOUT_REDIRECT_URL = "/"
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+# ============================================================
+# EMAIL
+# ============================================================
+
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+)
+
 EMAIL_HOST = "smtp.gmail.com"
+
 EMAIL_PORT = 587
+
 EMAIL_USE_TLS = True
+
 EMAIL_USE_SSL = False
 
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_HOST_USER = os.environ.get(
+    "EMAIL_HOST_USER",
+    ""
+)
+
+EMAIL_HOST_PASSWORD = os.environ.get(
+    "EMAIL_HOST_PASSWORD",
+    ""
+)
 
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL",
@@ -105,6 +237,31 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 )
 
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
 EMAIL_TIMEOUT = 15
 
+
+# ============================================================
+# PASSWORD RESET
+# ============================================================
+
 PASSWORD_RESET_TIMEOUT = 86400
+
+
+# ============================================================
+# PRODUCTION SECURITY
+# ============================================================
+
+if not DEBUG:
+
+    SECURE_BROWSER_XSS_FILTER = True
+
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+    X_FRAME_OPTIONS = "DENY"
+
+    SESSION_COOKIE_SECURE = True
+
+    CSRF_COOKIE_SECURE = True
+
+    SECURE_SSL_REDIRECT = True
