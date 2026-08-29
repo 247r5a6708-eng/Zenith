@@ -1,11 +1,23 @@
-from pathlib import Path
+﻿from pathlib import Path
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "nakama-streak-dev-secret-key-2026"
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "dev-only-change-this-secret"
+)
+
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        "127.0.0.1,localhost"
+    ).split(",")
+    if host.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -33,7 +45,6 @@ ROOT_URLCONF = "nakama.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        # str() required for Python 3.7 on Windows — WindowsPath not iterable in older Django
         "DIRS": [str(BASE_DIR / "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
@@ -52,14 +63,17 @@ WSGI_APPLICATION = "nakama.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        # str() required for Python 3.7 on Windows — fixes "WindowsPath not iterable" crash
         "NAME": str(BASE_DIR / "db.sqlite3"),
     }
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"
+    },
 ]
 
 LANGUAGE_CODE = "en-us"
@@ -68,7 +82,6 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-# str() for Python 3.7 Windows compat
 STATICFILES_DIRS = [str(BASE_DIR / "static")]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -77,24 +90,21 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/tracker/"
 LOGOUT_REDIRECT_URL = "/"
 
-# ── Email (password reset, etc.) ───────────────────────────────────────────
-# Sends real mail via Gmail SMTP using an App Password (2FA-protected accounts
-# can't use the normal account password for SMTP — an "App Password" is a
-# 16-character code generated specifically for an app, here named "Mailed").
-#
-# To use a different Gmail account, generate your own App Password at
-# https://myaccount.google.com/apppasswords and swap the two values below.
-# In production, pull these from environment variables instead of hardcoding.
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = "sontrachithkumar@gmail.com"
-EMAIL_HOST_PASSWORD = "qwgrpndpwhhvgvci"  # Gmail App Password (app name: Mailed), spaces removed
-DEFAULT_FROM_EMAIL = "Nakama Streak ⚓ <sontrachithkumar@gmail.com>"
+
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    "Nakama Streak <no-reply@example.com>"
+)
+
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 EMAIL_TIMEOUT = 15
 
-# Where password reset redirects after completion
-PASSWORD_RESET_TIMEOUT = 86400  # link valid 24 hours
+PASSWORD_RESET_TIMEOUT = 86400
