@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %} — Profile{% endblock %}
+
+{% block content %}
+<div class="page fade-in">
+
+  <!-- Hero stats row -->
+  <div class="stats-grid mb16">
+    <div class="stat-card">
+      <div class="stat-val live-streak">{{ stats.current_streak }}</div>
+      <div class="stat-label">Current streak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">{{ stats.longest_streak }}</div>
+      <div class="stat-label">Longest streak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">{{ stats.total_full_days }}</div>
+      <div class="stat-label">Full days completed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">{{ stats.avg_completion_rate_30d }}%</div>
+      <div class="stat-label">Avg completion (30d)</div>
+    </div>
+  </div>
+
+  <div class="profile-top">
+    <!-- Settings -->
+    <div class="card">
+      <div class="section-cap">Account</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--s3);border:2px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;">
+          {{ request.user.username|slice:":2"|upper }}
+        </div>
+        <div>
+          <div style="font-size:17px;font-weight:700;">{{ request.user.username }}</div>
+          <div style="font-size:12px;color:var(--tm);">Member since {{ member_since|date:"j M Y" }}</div>
+          {% if request.user.email %}<div style="font-size:12px;color:var(--tm);">{{ request.user.email }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- Email update -->
+      <form method="post" action="{% url 'tracker:profile' %}" style="margin-bottom:16px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_email">
+        <div class="form-group">
+          <label class="form-lbl">Email address</label>
+          <div style="display:flex;gap:8px;">
+            <input class="form-input" type="email" name="email" value="{{ request.user.email }}" placeholder="your@email.com" style="flex:1;">
+            <button type="submit" style="padding:8px 14px;border-radius:8px;border:1px solid var(--b2);background:transparent;color:var(--tm);font-size:12px;cursor:pointer;white-space:nowrap;">Update</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Theme -->
+      <div class="form-lbl mb8">Theme</div>
+      <form id="theme-form" method="post" action="{% url 'tracker:profile' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="theme">
+        <input type="hidden" name="theme" id="theme-val" value="{{ request.user.profile.theme }}">
+      </form>
+      <div class="theme-toggle-row mb16">
+        <button class="theme-btn {% if request.user.profile.theme == 'midnight' %}active{% endif %}"
+          data-theme="midnight" onclick="setTheme('midnight')">🌙 Midnight</button>
+        <button class="theme-btn {% if request.user.profile.theme == 'paper' %}active{% endif %}"
+          data-theme="paper" onclick="setTheme('paper')">📄 Paper</button>
+      </div>
+
+      <!-- Password -->
+      <button class="pw-toggle-btn" onclick="togglePw()">🔑 Change password →</button>
+      <div class="pw-form {% if pw_open %}open{% endif %}" id="pw-form">
+        <form method="post" action="{% url 'tracker:profile' %}" style="margin-top:16px;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="password">
+          <div class="form-group"><label class="form-lbl">Current password</label>
+            <input class="form-input" type="password" name="old_password">
+            {% if pw_form.old_password.errors %}<p class="auth-help">{{ pw_form.old_password.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group"><label class="form-lbl">New password</label>
+            <input class="form-input" type="password" name="new_password1">
+            {% if pw_form.new_password1.errors %}<p class="auth-help">{{ pw_form.new_password1.errors|join:", " }}</p>{% endif %}
+          </div>
+          <div class="form-group"><label class="form-lbl">Confirm new password</label>
+            <input class="form-input" type="password" name="new_password2">
+            {% if pw_form.new_password2.errors %}<p class="auth-help">{{ pw_form.new_password2.errors|join:", " }}</p>{% endif %}
+          </div>
+          <button type="submit" class="pw-submit">Update password</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- This week + Streak badges -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <!-- This week -->
+      <div class="card">
+        <div class="section-cap">This Week</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          {% for log in recent_logs %}
+          {% with wday=log.date|date:"D" %}
+          <div style="flex:1;text-align:center;">
+            <div style="font-size:10px;color:var(--tm);margin-bottom:4px;">{{ log.date|date:"D"|slice:":1" }}</div>
+            <div style="
+              width:100%;aspect-ratio:1;border-radius:6px;
+              {% if log.is_fully_completed %}background:var(--tx);{% elif log.shield_used %}background:var(--h2);border:1px dashed var(--b2);{% elif log.tasks_total > 0 %}background:var(--h1);{% else %}background:var(--s3);{% endif %}
+            " title="{{ log.date|date:'D j M' }}: {{ log.tasks_completed }}/{{ log.tasks_total }}"></div>
+            <div style="font-size:9px;color:var(--td);margin-top:3px;">{{ log.tasks_completed }}/{{ log.tasks_total }}</div>
+          </div>
+          {% endwith %}
+          {% endfor %}
+        </div>
+        <div style="display:flex;gap:6px;font-size:11px;color:var(--tm);">
+          <span>{{ stats.week_full }}/7 days full this week</span>
+        </div>
+      </div>
+
+      <!-- Streak badges -->
+      <div class="card">
+        <div class="flex-between mb12">
+          <span class="section-cap" style="margin-bottom:0;">Streak Badges</span>
+          <span class="sec-count">{{ streak_badges|length }} earned</span>
+        </div>
+        {% if streak_badges %}
+        <div class="badges-row">
+          {% for ub in streak_badges %}
+          <div class="badge-pill">
+            <div class="badge-circle">{{ ub.badge.icon }}</div>
+            <div class="badge-pill-name">{{ ub.badge.name }}</div>
+            <div class="badge-pill-date">{{ ub.earned_at }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="badge-empty">Hit 30 days to earn your first streak badge!</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed stats grid -->
+  <div class="card mb16" style="margin-top:16px;">
+    <div class="section-cap mb16">Productivity Stats</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.total_tasks_created }}</div>
+        <div class="mini-stat-lbl">Tasks created</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.total_tasks_completed }}</div>
+        <div class="mini-stat-lbl">Tasks completed</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.completion_rate }}%</div>
+        <div class="mini-stat-lbl">Completion rate</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.total_pomodoros }}</div>
+        <div class="mini-stat-lbl">Pomodoros logged</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.total_focus_hours }}h</div>
+        <div class="mini-stat-lbl">Total focus time</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.total_notes }}</div>
+        <div class="mini-stat-lbl">Notes created</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.shields_remaining }}</div>
+        <div class="mini-stat-lbl">Shields remaining</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.shields_used }}</div>
+        <div class="mini-stat-lbl">Shields used</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.active_weekly }}</div>
+        <div class="mini-stat-lbl">Weekly habits active</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val">{{ stats.active_range }}</div>
+        <div class="mini-stat-lbl">Range tasks active</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All badges -->
+  <div class="card">
+    <div class="flex-between mb16">
+      <span class="sec-title">All Badges</span>
+      <span class="sec-count">{{ earned_ids|length }}/{{ all_badges|length }} earned</span>
+    </div>
+    {% if all_badges %}
+    <div class="all-badges-grid">
+      {% for badge in all_badges %}
+      {% if badge.id in earned_ids %}
+      <div class="badge-pill">
+        <div class="badge-circle">{{ badge.icon }}</div>
+        <div class="badge-pill-name">{{ badge.name }}</div>
+        <div class="badge-pill-date">{{ badge.description }}</div>
+      </div>
+      {% else %}
+      <div class="badge-pill locked" title="{{ badge.description }}">
+        <div class="badge-circle" style="filter:grayscale(1);opacity:.4;">{{ badge.icon }}</div>
+        <div class="badge-pill-name" style="color:var(--td);">{{ badge.name }}</div>
+        <div class="badge-pill-date">{{ badge.description }}</div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="badge-empty">No badges defined yet. Run <code>python manage.py create_badges</code> to add them.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+function setTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  document.querySelectorAll(".theme-btn").forEach(b => b.classList.toggle("active", b.dataset.theme === theme));
+  document.getElementById("theme-val").value = theme;
+  document.getElementById("theme-form").submit();
+}
+function togglePw() { document.getElementById("pw-form").classList.toggle("open"); }
+</script>
+{% endblock %}

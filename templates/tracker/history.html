@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %} — History{% endblock %}
+
+{% block content %}
+<div class="page fade-in">
+  <div class="card">
+    <div class="flex-between mb16">
+      <span class="sec-title">Voyage history</span>
+      <span class="sec-count">last 90 days</span>
+    </div>
+    {% if logs %}
+    <div class="hist-list">
+      {% for log in logs %}
+      <div class="hist-row">
+        <div class="hist-date">{{ log.date|date:"D, j M" }}</div>
+        <div class="hist-bar-wrap">
+          <div class="hist-bar" style="width:{{ log.completion_pct }}%;"></div>
+        </div>
+        <div class="hist-ratio">
+          {% if log.tasks_total > 0 %}{{ log.tasks_completed }}/{{ log.tasks_total }}{% else %}—{% endif %}
+        </div>
+        <div class="hist-dot {% if not log.is_fully_completed and not log.shield_used %}empty{% endif %}"></div>
+        {% if log.shield_used %}<span class="hist-shield">🛡️ shield</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-box">No history yet. Complete your first day to see it here.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

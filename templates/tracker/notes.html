@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %} — Notes{% endblock %}
+
+{% block content %}
+<div class="page fade-in">
+
+  <!-- Add note form -->
+  <div class="card mb16">
+    <div class="sec-title mb16">New Note</div>
+    <form method="post" action="{% url 'tracker:notes' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <input type="hidden" name="color" id="note-color-val" value="default">
+
+      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-lbl">Title <span style="color:var(--td);">(optional)</span></label>
+          <input class="form-input" type="text" name="title" placeholder="Note title…" maxlength="200">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-lbl">Colour</label>
+          <div class="color-dot-row">
+            <div class="color-dot c-default sel" data-c="default" onclick="setNoteColor(this)" title="Default"></div>
+            <div class="color-dot c-warm"    data-c="warm"    onclick="setNoteColor(this)" title="Warm"></div>
+            <div class="color-dot c-cool"    data-c="cool"    onclick="setNoteColor(this)" title="Cool"></div>
+            <div class="color-dot c-accent"  data-c="accent"  onclick="setNoteColor(this)" title="Accent"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group mt8">
+        <label class="form-lbl">Content</label>
+        <textarea class="note-textarea" name="content" placeholder="Write anything — ideas, plans, learnings…" required></textarea>
+      </div>
+
+      <button type="submit" class="btn-add">Save note →</button>
+    </form>
+  </div>
+
+  <!-- Notes grid -->
+  {% if notes %}
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+    <span style="font-size:13px;font-weight:600;">{{ notes|length }} note{% if notes|length != 1 %}s{% endif %}</span>
+    <span style="font-size:11px;color:var(--td);">Pinned notes shown first</span>
+  </div>
+  <div class="notes-grid">
+    {% for note in notes %}
+    <div class="note-card color-{{ note.color }}">
+      {% if note.is_pinned %}<div class="note-pin">📌</div>{% endif %}
+      {% if note.title %}<div class="note-title">{{ note.title }}</div>{% endif %}
+      <div class="note-content">{{ note.content }}</div>
+      <div class="note-footer">
+        <span class="note-date">{{ note.updated_at|date:"j M Y, H:i" }}</span>
+        <div class="note-actions">
+          <!-- Pin/unpin -->
+          <form method="post" action="{% url 'tracker:notes' %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="pin">
+            <input type="hidden" name="id" value="{{ note.id }}">
+            <button type="submit" class="note-btn" title="{% if note.is_pinned %}Unpin{% else %}Pin{% endif %}">
+              {% if note.is_pinned %}📌{% else %}📍{% endif %}
+            </button>
+          </form>
+          <!-- Edit -->
+          <a href="{% url 'tracker:note_edit' note.id %}" class="note-btn" style="display:inline-flex;align-items:center;">✏️</a>
+          <!-- Delete -->
+          <form method="post" action="{% url 'tracker:notes' %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="{{ note.id }}">
+            <button type="submit" class="note-btn" onclick="return confirm('Delete this note?')" title="Delete">🗑️</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="notes-grid">
+    <div class="note-empty">
+      📝 No notes yet.<br>
+      <span style="font-size:12px;color:var(--td);">Capture your first idea above.</span>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function setNoteColor(dot) {
+  document.querySelectorAll(".color-dot").forEach(d => d.classList.remove("sel"));
+  dot.classList.add("sel");
+  document.getElementById("note-color-val").value = dot.dataset.c;
+}
+</script>
+{% endblock %}

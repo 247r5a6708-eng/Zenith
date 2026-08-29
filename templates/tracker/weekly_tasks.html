@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %} — Weekly Tasks{% endblock %}
+
+{% block content %}
+<div class="page fade-in">
+  <div class="tasks-layout">
+
+    <!-- LEFT: Existing weekly tasks -->
+    <div>
+      <div class="card">
+        <div class="flex-between mb16">
+          <span class="sec-title">Your Weekly Habits</span>
+          <span class="sec-count">{{ weekly_tasks|length }} task{% if weekly_tasks|length != 1 %}s{% endif %}</span>
+        </div>
+
+        {% if weekly_tasks %}
+        {% for wt in weekly_tasks %}
+        <div class="weekly-row {% if not wt.is_active %}inactive{% endif %}">
+          <div class="tg-dot" style="background:{{ wt.shade_color }};border:1px solid var(--b2);flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div class="weekly-row-title">{{ wt.title }}</div>
+            <div class="weekly-row-days mt4">
+              {% for name in wt.weekday_names %}
+              <span class="weekly-chip">{{ name }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <!-- Toggle active -->
+          <form method="post" action="{% url 'tracker:weekly_tasks' %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle">
+            <input type="hidden" name="id" value="{{ wt.id }}">
+            <button type="submit" class="toggle-btn">
+              {% if wt.is_active %}Pause{% else %}Resume{% endif %}
+            </button>
+          </form>
+          <!-- Delete -->
+          <form method="post" action="{% url 'tracker:weekly_tasks' %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="{{ wt.id }}">
+            <button type="submit" class="tg-del" style="opacity:1;"
+              onclick="return weeklyDeleteConfirm(this)">✕</button>
+          </form>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-box">No weekly habits yet. Create your first one →</div>
+        {% endif %}
+      </div>
+
+      <div class="card mt16" style="font-size:12px;color:var(--tm);line-height:1.8;">
+        <div class="sec-title mb8" style="font-size:13px;">💡 How weekly tasks work</div>
+        <ul style="padding-left:16px;display:flex;flex-direction:column;gap:3px;">
+          <li>Assign a task to any day(s) of the week</li>
+          <li>It appears automatically every week on those days</li>
+          <li>Check it off on the <a href="{% url 'tracker:today' %}" style="color:var(--tx);">Today</a> page</li>
+          <li>Counts toward your daily streak completion</li>
+          <li>Pause to skip a week without deleting</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- RIGHT: Create new weekly task -->
+    <div>
+      <div class="add-task-card">
+        <div class="sec-title mb16">New Weekly Habit</div>
+        <form method="post" action="{% url 'tracker:weekly_tasks' %}" id="weekly-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <input type="hidden" name="shade" id="shade-val" value="0">
+
+          <div class="form-group">
+            <label class="form-lbl">Task / Habit name</label>
+            <input class="form-input" type="text" name="title"
+              placeholder="e.g. Review DSA notes" required maxlength="300" autofocus>
+          </div>
+
+          <div class="form-group">
+            <label class="form-lbl">Repeat on weekdays</label>
+            <div class="weekday-grid" id="wd-grid">
+              {% for i in weekday_range %}
+              <button type="button" class="wd-btn" data-day="{{ i }}"
+                onclick="toggleWd(this)">{{ weekday_names|slice:i }}{{ weekday_names|slice:"0:1" }}
+              </button>
+              {% endfor %}
+            </div>
+            <div class="weekday-grid" id="wd-grid-real" style="display:none;">
+              {% for name in weekday_names %}
+              <button type="button" class="wd-btn" data-day="{{ forloop.counter0 }}"
+                onclick="toggleWd(this)">{{ name }}</button>
+              {% endfor %}
+            </div>
+            <div id="wd-hidden-inputs"></div>
+            <p id="wd-error" style="font-size:11px;color:var(--err-tx);display:none;margin-top:4px;">Select at least one day.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-lbl">Shade — visual priority</label>
+            <div class="shade-row">
+              <div class="shade-opt sel" data-v="0"></div>
+              <div class="shade-opt" data-v="1"></div>
+              <div class="shade-opt" data-v="2"></div>
+              <div class="shade-opt" data-v="3"></div>
+              <div class="shade-opt" data-v="4"></div>
+              <div class="shade-opt" data-v="5"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-add" onclick="return validateWd()">Create habit →</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Weekday toggle
+function toggleWd(btn) {
+  btn.classList.toggle("sel");
+  syncHidden();
+}
+function syncHidden() {
+  const container = document.getElementById("wd-hidden-inputs");
+  container.innerHTML = "";
+  document.querySelectorAll("#wd-grid-real .wd-btn.sel").forEach(b => {
+    const inp = document.createElement("input");
+    inp.type = "hidden"; inp.name = "weekdays"; inp.value = b.dataset.day;
+    container.appendChild(inp);
+  });
+}
+function validateWd() {
+  const sel = document.querySelectorAll("#wd-grid-real .wd-btn.sel");
+  if (sel.length === 0) {
+    document.getElementById("wd-error").style.display = "block";
+    return false;
+  }
+  document.getElementById("wd-error").style.display = "none";
+  return true;
+}
+// Show the real grid, hide the template one
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("wd-grid").style.display = "none";
+  document.getElementById("wd-grid-real").style.display = "flex";
+});
+</script>
+{% endblock %}
+<script>
+function weeklyDeleteConfirm(btn) {
+  // Return false to prevent form submit, then show custom confirm
+  const form = btn.closest("form");
+  showConfirm("Delete this weekly habit? It stops recurring.", () => form.submit());
+  return false;
+}
+</script>

@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %} — Tasks{% endblock %}
+
+{% block content %}
+<div class="page fade-in">
+  <div class="tasks-layout">
+
+    <!-- LEFT: Task Lists -->
+    <div>
+      {% if overdue_tasks %}
+      <div class="card mb16" style="border-color:rgba(255,180,0,.25);">
+        <div class="flex-between mb12">
+          <span class="sec-title" style="color:#c8a000;">⚠ Overdue Tasks</span>
+          <span class="sec-count">{{ overdue_tasks|length }} pending</span>
+        </div>
+        {% for task in overdue_tasks %}
+        <div class="tg-item" id="ti-{{ task.id }}">
+          <div class="tg-dot" style="background:{{ task.shade_color }};border:1px solid var(--b2);"></div>
+          <span class="tg-title">{{ task.title }}</span>
+          <span class="overdue-label">{{ task.target_date|date:"j M" }}</span>
+          <button class="tg-del" onclick="deleteTask({{ task.id }}, this)" title="Delete">✕</button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if grouped_upcoming %}
+      <div class="card mb16">
+        <div class="flex-between mb16">
+          <span class="sec-title">Upcoming Tasks</span>
+          <a href="{% url 'tracker:today' %}" style="font-size:12px;color:var(--tm);text-decoration:none;border:1px solid var(--b2);padding:4px 10px;border-radius:6px;">→ Today's view</a>
+        </div>
+        {% for d, task_list in grouped_upcoming %}
+        <div class="task-group">
+          <div class="tg-header">
+            {% if d == today %}<span style="color:var(--tx);">TODAY · </span>{% endif %}
+            {{ d|date:"D, j M Y" }}
+            <span class="tg-badge">{{ task_list|length }}</span>
+          </div>
+          {% for task in task_list %}
+          <div class="tg-item" id="ti-{{ task.id }}">
+            <div class="tg-dot" style="background:{{ task.shade_color }};border:1px solid var(--b2);"></div>
+            <span class="tg-title {% if task.is_completed %}tg-done{% endif %}">{{ task.title }}</span>
+            {% if task.pomodoro_count > 0 %}<span style="font-size:11px;color:var(--tm);">🍅{{ task.pomodoro_count }}</span>{% endif %}
+            <button class="tg-del" onclick="deleteTask({{ task.id }}, this)" title="Delete">✕</button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="card mb16">
+        <div class="empty-box">No upcoming tasks — add one using the panel →</div>
+      </div>
+      {% endif %}
+
+      {% if active_range_tasks %}
+      <div class="card mb16">
+        <div class="flex-between mb12">
+          <span class="sec-title">📅 Active Date-Range Tasks</span>
+          <span class="sec-count">{{ active_range_tasks|length }} active</span>
+        </div>
+        {% for rt in active_range_tasks %}
+        <div class="tg-item range-row" id="rt-{{ rt.id }}">
+          <div class="tg-dot" style="background:{{ rt.shade_color }};border:1px solid var(--b2);"></div>
+          <div style="flex:1;min-width:0;">
+            <div class="tg-title">{{ rt.title }}</div>
+            <div style="font-size:11px;color:var(--tm);margin-top:2px;">
+              {{ rt.start_date|date:"j M" }} → {{ rt.end_date|date:"j M Y" }}
+              · {{ rt.duration_days }} day{{ rt.duration_days|pluralize }}
+            </div>
+          </div>
+          <button class="tg-del" onclick="deleteRangeTask({{ rt.id }}, this)" title="Delete series">✕</button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if past_tasks %}
+      <div class="card">
+        <div class="flex-between mb16">
+          <span class="sec-title">Completed (past)</span>
+          <span class="sec-count">last 60</span>
+        </div>
+        {% regroup past_tasks by target_date as date_groups %}
+        {% for dg in date_groups %}
+        <div class="task-group">
+          <div class="tg-header">{{ dg.grouper|date:"D, j M Y" }}<span class="tg-badge">{{ dg.list|length }}</span></div>
+          {% for task in dg.list %}
+          <div class="tg-item">
+            <div class="tg-dot" style="background:{{ task.shade_color }};border:1px solid var(--b2);"></div>
+            <span class="tg-title tg-done">{{ task.title }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT: Add Task -->
+    <div>
+      <div class="add-task-card">
+        <div class="sec-title mb12">Add a task</div>
+
+        <!-- Tabs -->
+        <div class="task-tabs mb16">
+          <button class="task-tab-btn active" data-tab="one_time">One-time</button>
+          <button class="task-tab-btn" data-tab="range">Date range</button>
+        </div>
+
+        <form method="post" action="{% url 'tracker:tasks' %}">
+          {% csrf_token %}
+          <input type="hidden" name="shade" id="shade-val" value="0">
+          <input type="hidden" name="task_type" id="task-type-val" value="one_time">
+
+          <div class="form-group">
+            <label class="form-lbl">Task description</label>
+            <input class="form-input" type="text" name="title" placeholder="What will you do?" required maxlength="300" autofocus>
+          </div>
+
+          <!-- One-time panel -->
+          <div id="panel-one_time" class="task-tab-panel">
+            <div class="form-group">
+              <label class="form-lbl">Date</label>
+              <input class="form-input" type="date" name="target_date" value="{{ today|date:'Y-m-d' }}">
+            </div>
+          </div>
+
+          <!-- Date range panel -->
+          <div id="panel-range" class="task-tab-panel" style="display:none;">
+            <div class="form-group">
+              <label class="form-lbl">Start date</label>
+              <input class="form-input" type="date" name="start_date" value="{{ today|date:'Y-m-d' }}" id="range-start">
+            </div>
+            <div class="form-group">
+              <label class="form-lbl">End date</label>
+              <input class="form-input" type="date" name="end_date" id="range-end">
+            </div>
+            <p style="font-size:11px;color:var(--tm);margin-bottom:12px;">This task appears every day from start to end date.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-lbl">Shade — visual priority</label>
+            <div class="shade-row">
+              <div class="shade-opt sel" data-v="0" title="White"></div>
+              <div class="shade-opt" data-v="1" title="Light"></div>
+              <div class="shade-opt" data-v="2" title="Medium"></div>
+              <div class="shade-opt" data-v="3" title="Dark"></div>
+              <div class="shade-opt" data-v="4" title="Darker"></div>
+              <div class="shade-opt" data-v="5" title="Black"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-add">Add task →</button>
+        </form>
+      </div>
+
+      <div class="card mt16">
+        <div class="sec-title mb8" style="font-size:13px;">🔁 Weekly habits</div>
+        <p style="font-size:12px;color:var(--tm);line-height:1.7;">
+          Use <a href="{% url 'tracker:weekly_tasks' %}" style="color:var(--tx);text-decoration:underline;">Weekly Tasks</a> to create recurring habits that auto-appear on selected weekdays.
+        </p>
+      </div>
+
+      <div class="card mt16" style="font-size:12px;color:var(--tm);line-height:1.8;">
+        <div class="sec-title mb8" style="font-size:13px;">💡 Tips</div>
+        <ul style="padding-left:16px;display:flex;flex-direction:column;gap:3px;">
+          <li>Tasks added for a past date still count toward that day's log</li>
+          <li>Use shade to visually code task importance</li>
+          <li>Date-range tasks (e.g. a week-long project) show up every day in the range</li>
+          <li>Complete <strong style="color:var(--tx);">all</strong> of today's tasks to extend your streak!</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script>
+// Validate range dates before submit
+document.querySelector("form").addEventListener("submit", function(e) {
+  const type = document.getElementById("task-type-val").value;
+  if (type === "range") {
+    const start = document.getElementById("range-start").value;
+    const end = document.getElementById("range-end").value;
+    if (!start || !end || new Date(end) < new Date(start)) {
+      e.preventDefault();
+      showToast("Pick a valid end date that is on or after the start date.");
+    }
+  }
+});
+</script>
+{% endblock %}

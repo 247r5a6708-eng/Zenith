@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %} — Home{% endblock %}
+
+{% block content %}
+<div class="page fade-in">
+
+  <!-- Daily Quote (unique per day) -->
+  <div class="quote-card mb16">
+    <span class="quote-mark">"</span>
+    <div style="flex:1">
+      <p class="quote-text">{{ quote }}</p>
+      <p class="quote-date">{{ today|date:"l, j F Y" }}</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-val live-streak">{{ current_streak }}</div>
+      <div class="stat-label">Current streak (days)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">{{ longest_streak }}</div>
+      <div class="stat-label">Longest streak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val live-shields">{{ shields }}</div>
+      <div class="stat-label">Streak shields 🔵
+        {% if shields > 0 %}
+        <button onclick="useShield()" title="Use a shield to protect yesterday"
+          style="margin-left:6px;padding:2px 8px;border-radius:6px;border:1px solid var(--b2);background:transparent;color:var(--tm);font-size:10px;cursor:pointer;">Use</button>
+        {% endif %}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val-sm live-today-count" id="today-count">{{ today_done }}/{{ today_total }}</div>
+      <div class="stat-label">Today's tasks done</div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="heatmap-card">
+    <div class="heatmap-header">
+      <span class="heatmap-title">Your voyage log</span>
+      <span class="heatmap-count">{{ total_done }} day{% if total_done != 1 %}s{% endif %} fully completed</span>
+    </div>
+    <div class="heatmap-scroll">
+      <div class="heatmap-wrap">
+        <div class="day-labels">
+          <div class="day-lbl"></div>
+          <div class="day-lbl">Mon</div>
+          <div class="day-lbl"></div>
+          <div class="day-lbl">Wed</div>
+          <div class="day-lbl"></div>
+          <div class="day-lbl">Fri</div>
+          <div class="day-lbl"></div>
+        </div>
+        <div>
+          <div class="month-row" id="hm-months" style="position:relative;height:18px;font-size:9.5px;color:var(--tm);margin-bottom:2px;"></div>
+          <div class="heatmap-grid" id="hm-grid"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hm-legend">
+      <span>Less</span>
+      <div class="hm-legend-cells">
+        <div class="hm-legend-cell" style="background:var(--h0)"></div>
+        <div class="hm-legend-cell" style="background:var(--h1)"></div>
+        <div class="hm-legend-cell" style="background:var(--h2)"></div>
+        <div class="hm-legend-cell" style="background:var(--h3)"></div>
+        <div class="hm-legend-cell" style="background:var(--h4)"></div>
+      </div>
+      <span>More</span>
+    </div>
+  </div>
+
+  <!-- Milestone + Badges -->
+  <div class="mb-row">
+    <div class="card">
+      <div class="section-cap">Next Milestone</div>
+      {% if milestone %}
+      <div class="milestone-icon-title">
+        <span class="milestone-icon">{{ milestone.icon }}</span>
+        <span>{{ milestone.title }} · {{ milestone.subtitle }}</span>
+      </div>
+      <div class="milestone-sub">{{ milestone.days_remaining }} day{% if milestone.days_remaining != 1 %}s{% endif %} to go.</div>
+      <div class="prog-track"><div class="prog-fill" style="width:{{ milestone.progress }}%"></div></div>
+      {% else %}
+      <p style="color:var(--tm);font-size:13px;">You've reached all milestones. Legend 👑</p>
+      {% endif %}
+    </div>
+    <div class="card">
+      <div class="section-cap">Recent Badges</div>
+      {% if recent_badges %}
+      <div class="badges-row">
+        {% for ub in recent_badges %}
+        <div class="badge-pill">
+          <div class="badge-circle">{{ ub.badge.icon }}</div>
+          <div class="badge-pill-name">{{ ub.badge.name }}</div>
+          <div class="badge-pill-date">{{ ub.earned_at }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="badge-empty">No badges yet — complete your first full day to earn "First Step".</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{{ heatmap_data|json_script:"heatmap-data" }}
+{% endblock %}

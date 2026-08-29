@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="midnight">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — Nakama Streak</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="auth-wrap fade-in">
+  <div class="auth-card">
+    <div class="auth-head">
+      <div class="auth-logo">⚓</div>
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-sub">Sign in to continue your voyage</p>
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="auth-err">{{ form.non_field_errors|join:", " }}</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="auth-group">
+        <label class="auth-lbl">Username</label>
+        <input class="auth-input" type="text" name="username"
+               value="{{ form.username.value|default:'' }}"
+               placeholder="your_username" autofocus>
+        {% if form.username.errors %}
+        <p class="auth-help">{{ form.username.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+
+      <div class="auth-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <label class="auth-lbl" style="margin-bottom:0;">Password</label>
+          <a href="{% url 'password_reset' %}"
+             style="font-size:11px;color:var(--tm);text-decoration:none;"
+             onmouseover="this.style.textDecoration='underline'"
+             onmouseout="this.style.textDecoration='none'">Forgot password?</a>
+        </div>
+        <input class="auth-input" type="password" name="password" placeholder="••••••••">
+        {% if form.password.errors %}
+        <p class="auth-help">{{ form.password.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="auth-btn">Sign In →</button>
+    </form>
+
+    <p class="auth-foot">
+      No account? <a href="{% url 'register' %}">Start your journey</a>
+    </p>
+  </div>
+</div>
+</body>
+</html>

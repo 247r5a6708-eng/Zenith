@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %} — Today{% endblock %}
+{% block extra_js %}<script src="/static/js/pomodoro.js"></script>{% endblock %}
+
+{% block content %}
+<div class="page fade-in">
+  <div class="today-grid">
+
+    <!-- LEFT: Tasks -->
+    <div class="card">
+      <div class="task-list-header">
+        <div class="task-date-title">{{ today|date:"l, j M" }}</div>
+        <div class="task-count-lbl live-today-count" id="today-count">
+          {{ total_done_all }}/{{ total_all }} done
+        </div>
+      </div>
+
+      <!-- Today's regular tasks -->
+      {% if tasks %}
+      <div class="task-items">
+        {% for task in tasks %}
+        <div class="task-row {% if task.is_completed %}done{% endif %}">
+          <input type="checkbox" class="task-cb"
+            {% if task.is_completed %}checked{% endif %}
+            onchange="toggleTask({{ task.id }}, this)">
+          <div class="task-dot" style="background:{{ task.shade_color }};border:1px solid var(--b2);"></div>
+          <span class="task-title">{{ task.title }}</span>
+          {% if task.pomodoro_count > 0 %}<span class="task-pom">🍅 {{ task.pomodoro_count }}</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Range tasks for today -->
+      {% if range_with_status %}
+      <div class="weekly-section-title">📅 Range Tasks</div>
+      <div class="task-items">
+        {% for item in range_with_status %}
+        <div class="task-row {% if item.done %}done{% endif %}" id="range-row-{{ item.task.id }}">
+          <input type="checkbox" class="task-cb"
+            {% if item.done %}checked{% endif %}
+            onchange="toggleRange({{ item.task.id }}, this)">
+          <div class="task-dot" style="background:{{ item.task.shade_color }};border:1px solid var(--b2);"></div>
+          <span class="task-title">{{ item.task.title }}</span>
+          <span class="weekly-chip" title="{{ item.task.start_date }} → {{ item.task.end_date }}">
+            {% if item.days_left == 0 %}last day{% elif item.days_left == 1 %}1 day left{% else %}{{ item.days_left }}d left{% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Weekly recurring tasks for today -->
+      {% if weekly_with_status %}
+      <div class="weekly-section-title">🔁 Weekly Tasks</div>
+      <div class="task-items">
+        {% for item in weekly_with_status %}
+        <div class="task-row {% if item.done %}done{% endif %}" id="weekly-row-{{ item.task.id }}">
+          <input type="checkbox" class="task-cb"
+            {% if item.done %}checked{% endif %}
+            onchange="toggleWeekly({{ item.task.id }}, this)">
+          <div class="task-dot" style="background:{{ item.task.shade_color }};border:1px solid var(--b2);"></div>
+          <span class="task-title">{{ item.task.title }}</span>
+          <span class="weekly-chip">{{ item.task.weekday_names|join:", " }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Overdue tasks -->
+      {% if overdue_tasks %}
+      <div class="overdue-section-title">⚠ Overdue</div>
+      <div class="task-items">
+        {% for task in overdue_tasks %}
+        <div class="task-row {% if task.is_completed %}done{% endif %}">
+          <input type="checkbox" class="task-cb"
+            {% if task.is_completed %}checked{% endif %}
+            onchange="toggleTask({{ task.id }}, this)">
+          <div class="task-dot" style="background:{{ task.shade_color }};border:1px solid var(--b2);"></div>
+          <span class="task-title">{{ task.title }}</span>
+          <span class="overdue-label">{{ task.target_date|date:"j M" }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if not tasks and not weekly_with_status and not range_with_status and not overdue_tasks %}
+      <div class="task-empty-state">
+        No tasks for today.<br>
+        <a href="{% url 'tracker:tasks' %}" style="color:var(--tx);text-decoration:underline;font-size:12px;margin-top:8px;display:inline-block;">Add tasks →</a>
+        &nbsp; or &nbsp;
+        <a href="{% url 'tracker:weekly_tasks' %}" style="color:var(--tx);text-decoration:underline;font-size:12px;">Set up weekly habits →</a>
+      </div>
+      {% endif %}
+
+      <div class="task-complete-banner {% if all_done %}show{% endif %}" id="complete-banner">
+        🎉 All tasks complete! Today's streak entry locked in.
+      </div>
+    </div>
+
+    <!-- RIGHT: Pomodoro -->
+    <div class="pomodoro-card">
+      <div class="pom-label section-cap">Focus Session</div>
+      <div class="pom-dur-row">
+        <button class="pom-dur-btn active" data-min="25">25 min</button>
+        <button class="pom-dur-btn" data-min="45">45 min</button>
+        <button class="pom-dur-btn" data-min="60">60 min</button>
+      </div>
+      <div class="pom-ring-wrap">
+        <svg class="pom-svg" viewBox="0 0 158 158">
+          <circle class="ring-bg" cx="79" cy="79" r="68"/>
+          <circle class="ring-prog" cx="79" cy="79" r="68"/>
+        </svg>
+        <div class="pom-time" id="pom-time">25:00</div>
+      </div>
+      <div class="pom-controls">
+        <button class="pom-btn primary" id="pom-start">Start</button>
+        <button class="pom-btn" id="pom-pause">Pause</button>
+        <button class="pom-btn" id="pom-reset">Reset</button>
+      </div>
+      <div class="pom-stats" id="pom-stats">Total pomodoros logged: {{ total_pomodoros }}</div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

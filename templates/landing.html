@@ -1,0 +1,108 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="midnight">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zenith — Reach Your Peak Every Day</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<!-- Minimal nav on landing -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-brand"><span class="anchor">⬆</span><span>Zenith</span></div>
+    <div style="flex:1"></div>
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'login' %}" style="padding:7px 16px;border:1px solid var(--b2);border-radius:8px;font-size:13px;color:var(--tm);">Sign in</a>
+      <a href="{% url 'register' %}" style="padding:7px 16px;background:var(--abg);color:var(--atx);border-radius:8px;font-size:13px;font-weight:600;border:none;">Get started</a>
+    </div>
+  </div>
+</nav>
+
+<div class="landing-wrap fade-in">
+  <div class="land-logo">⬆</div>
+  <h1 class="land-title">Reach Your Zenith</h1>
+  <p class="land-sub">
+    The modern discipline tracker for builders, learners, and achievers.
+    Streaks, Pomodoro, weekly habits, notes — all in one minimal space.
+  </p>
+  <div class="land-btns">
+    <a href="{% url 'register' %}" class="btn-primary-land">Start for Free →</a>
+    <a href="{% url 'login' %}" class="btn-sec-land">Sign In</a>
+  </div>
+
+  <div class="land-features">
+    <div class="feat">
+      <div class="feat-icon">📅</div>
+      <div class="feat-title">Streak Heatmap</div>
+      <div class="feat-desc">GitHub-style 52-week activity log of your daily wins</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔁</div>
+      <div class="feat-title">Weekly Habits</div>
+      <div class="feat-desc">Schedule recurring tasks on specific weekdays automatically</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🍅</div>
+      <div class="feat-title">Pomodoro</div>
+      <div class="feat-desc">25 / 45 / 60-min focus sessions with ring timer and logging</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📝</div>
+      <div class="feat-title">Smart Notes</div>
+      <div class="feat-desc">Capture ideas, pin key notes, colour-code everything</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🏆</div>
+      <div class="feat-title">Badges</div>
+      <div class="feat-desc">Earn milestone and achievement badges as you grow</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🛡️</div>
+      <div class="feat-title">Streak Shields</div>
+      <div class="feat-desc">Protect your streak on your hardest days</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">⬆ Zenith</div>
+      <div class="footer-tagline">Build habits. Track streaks. Reach your peak.</div>
+      <div class="footer-contact">
+        <a href="mailto:kumarrachith0@gmail.com">✉ kumarrachith0@gmail.com</a><br>
+        <a href="tel:+916302424692">📞 +91 63024 24692</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Product</div>
+      <div class="footer-links">
+        <a href="{% url 'register' %}">Get Started</a>
+        <a href="{% url 'login' %}">Sign In</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Legal</div>
+      <div class="footer-links">
+        <a href="{% url 'privacy' %}">Privacy Policy</a>
+        <a href="{% url 'terms' %}">Terms of Service</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Contact</div>
+      <div class="footer-links">
+        <a href="mailto:kumarrachith0@gmail.com">Email Us</a>
+        <a href="mailto:kumarrachith0@gmail.com?subject=Zenith Feedback">Feedback</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Zenith. All rights reserved.</span>
+    <span><a href="{% url 'privacy' %}">Privacy</a> · <a href="{% url 'terms' %}">Terms</a></span>
+  </div>
+</footer>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>
