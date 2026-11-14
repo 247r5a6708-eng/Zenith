@@ -28,14 +28,28 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+# Vercel provides these hostnames at build/runtime. Include the active
+# deployment URL and the stable production alias when available.
+for vercel_host in (
+    os.environ.get("VERCEL_URL"),
+    os.environ.get("VERCEL_PROJECT_PRODUCTION_URL"),
+    os.environ.get("VERCEL_BRANCH_URL"),
+    "zenith-kumarrachith0-2591.vercel.app",
+):
+    if vercel_host:
+        ALLOWED_HOSTS.append(vercel_host.removeprefix("https://").removeprefix("http://").rstrip("/"))
 
 # Render automatically provides this variable.
-RENDER_EXTERNAL_HOSTNAME = os.environ.get(
-    "RENDER_EXTERNAL_HOSTNAME"
-)
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{host}"
+    for host in ALLOWED_HOSTS
+    if host not in ("127.0.0.1", "localhost")
+]
 
 
 # ============================================================
